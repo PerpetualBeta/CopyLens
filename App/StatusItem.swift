@@ -38,6 +38,17 @@ final class StatusItem: NSObject, NSMenuDelegate {
         let menu = NSMenu()
         menu.delegate = self
 
+        // Standard Jorvik menu order — About first, then app-specific
+        // actions, then Settings, then Quit. Matches Rainy Day,
+        // BrowserCommander, etc.
+        let about = NSMenuItem(title: "About CopyLens",
+                                action: #selector(openAbout),
+                                keyEquivalent: "")
+        about.target = self
+        menu.addItem(about)
+
+        menu.addItem(NSMenuItem.separator())
+
         captureItem.target = self
         menu.addItem(captureItem)
 
@@ -48,12 +59,6 @@ final class StatusItem: NSObject, NSMenuDelegate {
                                    keyEquivalent: ",")
         settings.target = self
         menu.addItem(settings)
-
-        let about = NSMenuItem(title: "About CopyLens",
-                                action: #selector(openAbout),
-                                keyEquivalent: "")
-        about.target = self
-        menu.addItem(about)
 
         menu.addItem(NSMenuItem.separator())
         menu.addItem(withTitle: "Quit CopyLens",
