@@ -1,0 +1,11 @@
+.DS_Store
+*.app
+*.app.dSYM
+build/
+.build/
+*.xcuserstate
+*.swiftpm/
+*.pkg
+*.zip
+*.iconset
+!Resources/*.iconset

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleIdentifier</key>
+    <string>cc.jorviksoftware.CopyLens</string>
+    <key>CFBundleName</key>
+    <string>CopyLens</string>
+    <key>CFBundleDisplayName</key>
+    <string>CopyLens</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>CFBundleShortVersionString</key>
+    <string>0.1.0</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleExecutable</key>
+    <string>CopyLens</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>14.0</string>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+    <!-- Menu-bar utility: no Dock icon, no app-switcher entry. -->
+    <key>LSUIElement</key>
+    <true/>
+    <key>NSPrincipalClass</key>
+    <string>NSApplication</string>
+    <!-- Shown in the TCC prompt when CopyLens first requests Screen
+         Recording permission. Drawing a rectangular selection and
+         capturing pixels through ScreenCaptureKit requires this. -->
+    <key>NSScreenCaptureUsageDescription</key>
+    <string>CopyLens captures the rectangle you draw so it can read text out of it (or copy the image when there's no text).</string>
+    <!-- Sparkle 2.x configuration. Match the conventions used by the
+         other public Jorvik apps; only the feed URL is per-app, and the
+         EdDSA key below is a placeholder — regenerate before first
+         release and put the public half here. -->
+    <key>SUFeedURL</key>
+    <string>https://jorviksoftware.cc/appcasts/copylens.xml</string>
+    <key>SUPublicEDKey</key>
+    <string>REPLACE_WITH_PUBLIC_ED_KEY_BEFORE_FIRST_RELEASE</string>
+    <key>SUEnableAutomaticChecks</key>
+    <true/>
+    <key>SUScheduledCheckInterval</key>
+    <integer>86400</integer>
+</dict>
+</plist>
