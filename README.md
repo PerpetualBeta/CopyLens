@@ -1,52 +1,109 @@
 # CopyLens
 
-Press **Hyper-\\** (Cmd+Ctrl+Opt+Shift+\\), draw a rectangle, get the contents on your clipboard. If there's text inside the rectangle, you get text. If there isn't, you get the cropped image. Same gesture, two outputs.
+Hit your configurable shortcut, draw a rectangle anywhere on screen, get whatever's inside on your clipboard. If there's text in the rectangle you get text. If there isn't, you get the cropped image. Same gesture, two outputs — no mode switch, no second thought.
 
-The motivating use case: copying a single column out of an HTML table in Mail — the boring solution involves copying the whole table and editing it back down. CopyLens makes "the column I'm looking at" the same gesture as "this whole table".
+The motivating use case: copying one column out of an HTML table in an email. The boring solution is to copy the whole table, paste it somewhere, and trim it back to the column you wanted. CopyLens makes "this column I'm looking at" the same gesture as "this whole table" — you just draw a tighter box.
+
+## Requirements
+
+- macOS 14 (Sonoma) or later
+- Universal binary (Apple Silicon and Intel)
+
+## Installation
+
+Two formats on every release — both signed and notarised, pick whichever suits:
+
+- **[Installer (`.pkg`)](https://github.com/PerpetualBeta/CopyLens/releases/latest/download/CopyLens.pkg)** — recommended for first-time installs. Double-click to run; macOS Installer places `CopyLens.app` in `/Applications/` without quarantine or App Translocation.
+- **[Download (`.zip`)](https://github.com/PerpetualBeta/CopyLens/releases/latest)** — unzip and drag `CopyLens.app` to your `/Applications/` folder.
+
+After installation:
+
+1. Launch CopyLens — a dashed-rectangle icon appears in the menu bar
+2. Grant **Screen Recording** permission when prompted (CopyLens has to read pixels off your screen to OCR them; macOS prompts on first capture)
+
+To uninstall: `pkill CopyLens` then drag `CopyLens.app` to the Trash.
 
 ## How it works
 
-1. **Hotkey** — `RegisterEventHotKey` registers Hyper-\\ as a global hotkey.
-2. **Overlay** — borderless transparent `NSPanel`s span every screen at `.screenSaver` level; the user click-drags a selection rectangle. Escape cancels.
-3. **Capture** — `SCScreenshotManager.captureImage` grabs that rectangle from the appropriate display at native pixel density.
-4. **OCR** — `VNRecognizeTextRequest` at `.accurate` recognises text, returns observations sorted top-to-bottom, then left-to-right within rough "lines".
-5. **Paste** — observations joined with newlines go on the pasteboard as a string. If Vision returned zero observations, the cropped image goes on the pasteboard as PNG+TIFF instead.
-6. **HUD** — a brief bottom-centre toast reports which path ran ("Copied 247 chars" / "Copied image 320×180").
+1. **Hit your shortcut.** A transparent overlay covers every connected display and the cursor switches to a crosshair.
+2. **Drag a rectangle** around the content you want. Release to commit, Escape to cancel.
+3. **CopyLens captures that rectangle** at native pixel density via ScreenCaptureKit and runs Apple's Vision framework over it.
+4. **You get one of two outcomes:**
+    - **Text found** → joined and placed on the clipboard as text, sorted top-to-bottom and left-to-right in reading order.
+    - **No text found** → the cropped image is placed on the clipboard as PNG + TIFF, ready to paste into any app that accepts images.
+5. A brief HUD confirms which path ran ("Copied 247 chars" / "Copied image 320×180"). Both can be paste-targeted immediately.
 
-## Build
+Because the gesture is the same regardless of content, you don't have to decide ahead of time whether you want text or an image. Draw the box; CopyLens does the right thing.
 
-This is a Makefile project, same shape as Rainy Day and ActiveSpace.
+### One column from a table
 
-```sh
-make dev-build      # build + sign (Developer ID) the .app
-make run            # build, kill any old instance, open the .app
-make icon           # regenerate Resources/AppIcon.icns
-```
+Draw a tight rectangle that covers just one column's width. Vision only sees text inside the rectangle, so the result is exactly that column — top to bottom, one line per row, plain text. Paste anywhere. Tables in Mail, in browser pages, in PDFs, in screenshots-of-PDFs — all the same gesture.
 
-The `dev-build` target expects:
+### A region of a diagram
 
-- **Sparkle.framework** in the repo root. Copy it from a sibling Jorvik app (Rainy Day, ActiveSpace) — same version everywhere.
-- **JorvikKit** sources in `App/JorvikKit/`. Stub files are in place so the build links; copy the real ones in from `/Users/jonathanhollin/Desktop/Jorvik Software/JorvikKit` when ready.
-- **`../jorvik-release/release.mk`** for release targets (stamping, notarisation, appcast). Dev builds don't need it but the `include` line will fail without it — comment that line out for first compile if needed.
+Draw a rectangle around a chart, a panel of an image, a UI mockup. Vision finds no text (or filters out as noise anything it does), so CopyLens drops the cropped image on the clipboard instead. Paste into Notes, into a message, into a Keynote slide.
 
-## Permissions
+## Settings
 
-CopyLens needs **Screen Recording** permission. On first capture, macOS will prompt; grant it in System Settings → Privacy & Security → Screen Recording. No other entitlements are needed.
+Click the menu bar icon → **Settings…**:
 
-## Debug logging
+- **Hotkey** — click the field and press the combination you want. Default is **⌃⌥⇧⌘\\** (Hyper-\\); change it to anything that includes at least one modifier.
+- **Show feedback HUD** — toggle the toast that appears after each capture. Off if you'd rather work silently.
+- **OCR languages** — read-only display. CopyLens picks recognition languages from your system's preferred language list, intersected with Vision's supported set, with English always appended as a fallback. If your Mac is set to French, you'll see `fr-FR, en-US` here and both will be recognised on every capture.
+- **Launch at Login** — start automatically when you log in.
 
-```sh
-defaults write cc.jorviksoftware.CopyLens CopyLens.debugLogging -bool YES
-```
+All settings persist immediately, no Save/OK button.
 
-Then relaunch. Output goes to `/tmp/copylens.log`. Disable with `-bool NO` or `defaults delete`.
+## Auto-update
 
-## Status
+CopyLens uses [Sparkle 2.x](https://sparkle-project.org/) for auto-update. Updates check daily against `https://jorviksoftware.cc/appcasts/copylens.xml`. Trigger a manual check from the menu bar → **Check for Updates…**.
 
-Starter skeleton — the full pipeline is wired up but unproven. Edge cases worth covering before first release:
+Updates are EdDSA-signed; your copy will only install genuine Jorvik Software releases.
 
-- **Multi-display straddles.** Current code uses the midpoint of the drawn rect to pick a display; a selection that physically spans two screens captures only the half on the chosen display. Could be improved with a multi-`SCScreenshotManager` composite if it turns out to matter.
-- **Retina precision.** Capture is in native pixels (×scale), but the rect width × scale is `Int`-truncated — the right-and-bottom edge may be one pixel short on fractional rects. Imperceptible for OCR.
-- **Right-to-left text.** Vision handles RTL languages, but the sort heuristic (left → right within a line) reverses logical order for Arabic / Hebrew. Acceptable for the MVP English target.
-- **Empty selection.** A click without drag is treated as cancel; selections smaller than 4×4 pt likewise. No HUD shown for cancels.
-- **Hotkey conflicts.** Hyper-\\ is unusual enough to be safe, but a real hotkey recorder belongs in Settings before public release.
+## Privacy
+
+- **No telemetry.** No usage reporting, no log file unless you explicitly turn one on (`defaults write cc.jorviksoftware.CopyLens CopyLens.debugLogging -bool YES` writes lifecycle lines to `/tmp/copylens.log`; off by default), no network requests beyond Sparkle's appcast fetch.
+- **No camera, microphone, network access.** Captures stay on-device — Vision OCR runs locally; pasteboard writes are local.
+- **Permissions:** Screen Recording is the only permission CopyLens requests. Accessibility is **not** required (the hotkey uses Carbon's `RegisterEventHotKey`, which doesn't need AX).
+
+## Multi-display
+
+The overlay covers every connected screen at once; you can drag your rectangle starting on whichever screen you're working on. The capture is taken from the screen containing the rectangle's midpoint, so a rectangle that physically straddles two screens captures from the screen it's mostly on (a deliberate simplification — straddling captures are rare enough not to warrant the per-display composition cost).
+
+## Architecture
+
+| File | Purpose |
+|------|---------|
+| `AppDelegate.swift` | Lifecycle, hotkey registration, Settings/About wire-up |
+| `StatusItem.swift` | Menu bar icon, menu items, click routing |
+| `HotkeyManager.swift` | Carbon `RegisterEventHotKey` wrapper, slot/config-driven so the recorder can re-register on the fly |
+| `HotkeyRecorder.swift` | SwiftUI recorder field, `HotkeyConfig` value type, `HotkeyStore` UserDefaults persistence, glyph formatter |
+| `CaptureCoordinator.swift` | End-to-end pipeline orchestration |
+| `SelectionOverlay.swift` | Transparent per-screen panels, rect-drag drawing |
+| `Screenshot.swift` | ScreenCaptureKit capture, Cocoa→CG coord flip, native pixel density |
+| `OCRService.swift` | Vision text recognition, reading-order sort, locale-driven language picker |
+| `Pasteboard.swift` | Text-or-image clipboard writer |
+| `HUDWindow.swift` | Bottom-centre feedback toast, UserDefaults-gated |
+| `CopyLensSettings.swift` | SwiftUI app-specific settings rows, slotted into JorvikSettingsView |
+| `SparkleDelegate.swift` | Sparkle 2.x bootstrap |
+| `Log.swift` | Optional debug logging behind a UserDefaults flag |
+| `JorvikKit/*` | Vendored shared components — About modal, Settings frame, update checker, window helper |
+
+## Building from source
+
+CopyLens builds via the shared Jorvik `release.mk`. With the `jorvik-release` sibling repo cloned alongside it and [GNU Make](https://formulae.brew.sh/formula/make) 4 installed:
+
+- Clone the repo: `git clone https://github.com/PerpetualBeta/CopyLens.git`
+- Local install (signed with the Jorvik Developer ID): `gmake dev-build`
+- Run the freshly-built copy: `gmake run`
+- Signed, notarised, stapled `.zip` + `.pkg` ready to ship: `gmake release`
+
+## Attribution
+
+CopyLens uses [Sparkle 2.x](https://sparkle-project.org/) for auto-update (MIT). Text recognition and screen capture are provided by Apple's Vision and ScreenCaptureKit frameworks — part of macOS, no separate attribution required.
+
+See [`ATTRIBUTIONS.md`](ATTRIBUTIONS.md) for full Sparkle licence text.
+
+---
+
+CopyLens is provided by [Jorvik Software](https://jorviksoftware.cc/). If you find it useful, consider [buying me a coffee](https://jorviksoftware.cc/donate).
