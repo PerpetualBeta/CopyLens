@@ -54,49 +54,72 @@ enum OCRService {
     }
 
     /// Human-readable summary of the language list, for the Settings UI.
-    /// Example: `"en-GB, fr-FR, en-US"`.
+    /// When the user's system preference has an exact Vision match, just
+    /// shows the Vision identifier (e.g. `"fr-FR"`). When the system pref
+    /// doesn't have a Vision counterpart and we fell back to the
+    /// base-language match, shows the mapping (e.g. `"en-US (from en-GB)"`)
+    /// — Vision doesn't ship an en-GB recogniser, so an en-GB system gets
+    /// en-US for OCR, and this surface makes that visible.
     static func summarisedLanguages() -> String {
-        preferredLanguages.joined(separator: ", ")
+        mappings.map { m -> String in
+            if let pref = m.userPref, pref.caseInsensitiveCompare(m.vision) != .orderedSame {
+                return "\(m.vision) (from \(pref))"
+            }
+            return m.vision
+        }.joined(separator: ", ")
     }
 
     // MARK: - Language resolution
 
+    /// One row per Vision language CopyLens will ask the recogniser to
+    /// consider, paired with the user-preference that produced it (or
+    /// `nil` when the language is the English fallback we always append).
+    private struct LanguageMapping {
+        let vision: String
+        let userPref: String?
+    }
+
     /// Cached at process start. Vision's supported list is fixed at
     /// runtime, so there's no need to recompute on every call.
-    private static let preferredLanguages: [String] = computePreferredLanguages()
+    private static let mappings: [LanguageMapping] = computeMappings()
+    private static let preferredLanguages: [String] = mappings.map(\.vision)
 
-    private static func computePreferredLanguages() -> [String] {
+    private static func computeMappings() -> [LanguageMapping] {
         let request = VNRecognizeTextRequest()
         request.recognitionLevel = .accurate
         let supported = (try? request.supportedRecognitionLanguages()) ?? ["en-US"]
 
-        var picked: [String] = []
+        var result: [LanguageMapping] = []
+        var seenVision = Set<String>()
+
         for pref in Locale.preferredLanguages {
             // Exact match first (e.g. preferred="en-GB" matches supported="en-GB"
-            // when Vision adds it), else base-language match (e.g. preferred="en-GB"
-            // → supported="en-US" via base="en").
+            // if Vision ever adds it), else base-language match (e.g.
+            // preferred="en-GB" → supported="en-US" via base="en").
             let exact = supported.first { $0.caseInsensitiveCompare(pref) == .orderedSame }
             let baseLanguageOfPref = baseLanguageCode(pref)
             let prefixMatch = supported.first {
                 baseLanguageCode($0).caseInsensitiveCompare(baseLanguageOfPref) == .orderedSame
             }
-            if let match = exact ?? prefixMatch, !picked.contains(match) {
-                picked.append(match)
+            if let match = exact ?? prefixMatch, !seenVision.contains(match) {
+                result.append(LanguageMapping(vision: match, userPref: pref))
+                seenVision.insert(match)
             }
         }
 
         // Always end with English so a non-English-locale machine that
         // OCRs an English document still gets text back. Skip if English
-        // is already in the list (avoid duplicating).
-        if !picked.contains(where: { baseLanguageCode($0).caseInsensitiveCompare("en") == .orderedSame }) {
+        // is already in the list (avoid duplicating). No userPref because
+        // this entry isn't driven by Locale.
+        if !result.contains(where: { baseLanguageCode($0.vision).caseInsensitiveCompare("en") == .orderedSame }) {
             if let en = supported.first(where: { baseLanguageCode($0).caseInsensitiveCompare("en") == .orderedSame }) {
-                picked.append(en)
+                result.append(LanguageMapping(vision: en, userPref: nil))
             }
         }
 
-        if picked.isEmpty { picked = ["en-US"] }
-        clog("OCRService: languages=\(picked) (supported=\(supported.count))")
-        return picked
+        if result.isEmpty { result = [LanguageMapping(vision: "en-US", userPref: nil)] }
+        clog("OCRService: mappings=\(result.map { "\($0.vision)←\($0.userPref ?? "fallback")" }) (supported=\(supported.count))")
+        return result
     }
 
     /// Returns the base language code ("en" from "en-GB", "zh" from

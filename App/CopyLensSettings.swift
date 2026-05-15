@@ -10,8 +10,7 @@ struct CopyLensSettings: View {
 
     let onHotkeyChanged: (HotkeyConfig) -> Void
 
-    @AppStorage("CopyLens.hudEnabled")     private var hudEnabled: Bool = true
-    @AppStorage("CopyLens.debugLogging")   private var debugLogging: Bool = false
+    @AppStorage("CopyLens.hudEnabled") private var hudEnabled: Bool = true
 
     var body: some View {
         Section("Capture") {
@@ -29,7 +28,9 @@ struct CopyLensSettings: View {
             // OCR languages are derived from the system locale (with
             // English as a fallback); not user-editable here. Surface
             // the computed list so the user can sanity-check what
-            // Vision is actually being asked to recognise.
+            // Vision is actually being asked to recognise — and, when
+            // their system preference doesn't have an exact Vision
+            // counterpart (e.g. en-GB → en-US), see the mapping.
             HStack {
                 Text("OCR languages")
                 Spacer()
@@ -39,15 +40,9 @@ struct CopyLensSettings: View {
             }
         }
 
-        Section("Diagnostics") {
-            Toggle("Write debug log to /tmp/copylens.log", isOn: $debugLogging)
-            // Debug logging is read once at process start (the file
-            // handle is opened or not depending on the flag), so
-            // toggling at runtime needs a relaunch to take effect.
-            // Flag this so the user isn't surprised by the lag.
-            Text("Takes effect after the next CopyLens launch.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
+        // Debug logging is a power-user knob, not for the Settings UI.
+        // Enable with:
+        //   defaults write cc.jorviksoftware.CopyLens CopyLens.debugLogging -bool YES
+        // Then relaunch CopyLens. Output goes to /tmp/copylens.log.
     }
 }
