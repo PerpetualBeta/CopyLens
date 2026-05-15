@@ -2,9 +2,9 @@ import Cocoa
 import Sparkle
 
 /// Sparkle 2.x bootstrap. Held by AppDelegate so the SPUStandardUpdater
-/// stays alive for the lifetime of the process. Feed URL and EdDSA public
-/// key live in Info.plist. The EdDSA value there is currently a placeholder
-/// — regenerate before first release.
+/// stays alive for the lifetime of the process. Feed URL and the shared
+/// Jorvik EdDSA public key live in Info.plist — same key as the rest of
+/// the suite, signed by the private half that lives in the user keychain.
 final class SparkleDelegate: NSObject {
 
     private var updater: SPUStandardUpdaterController?
@@ -14,5 +14,13 @@ final class SparkleDelegate: NSObject {
                                                 updaterDelegate: nil,
                                                 userDriverDelegate: nil)
         clog("SparkleDelegate: SPUStandardUpdater started")
+    }
+
+    /// Entry point for the menu-bar "Check for Updates…" item.
+    /// Foregrounds the app so Sparkle's first dialog isn't hidden
+    /// behind whatever was previously frontmost.
+    func checkForUpdates() {
+        NSRunningApplication.current.activate(options: [.activateAllWindows])
+        updater?.checkForUpdates(nil)
     }
 }

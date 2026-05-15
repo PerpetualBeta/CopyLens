@@ -6,6 +6,7 @@ final class StatusItem: NSObject, NSMenuDelegate {
     private let onTrigger: () -> Void
     private let onOpenSettings: () -> Void
     private let onOpenAbout: () -> Void
+    private let onCheckForUpdates: () -> Void
 
     /// Held so `menuNeedsUpdate(_:)` can re-stamp the capture shortcut on
     /// every menu open — keeps the glyph in sync with whatever the user
@@ -14,12 +15,14 @@ final class StatusItem: NSObject, NSMenuDelegate {
 
     init(onTrigger: @escaping () -> Void,
          onOpenSettings: @escaping () -> Void,
-         onOpenAbout: @escaping () -> Void)
+         onOpenAbout: @escaping () -> Void,
+         onCheckForUpdates: @escaping () -> Void)
     {
         self.item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         self.onTrigger = onTrigger
         self.onOpenSettings = onOpenSettings
         self.onOpenAbout = onOpenAbout
+        self.onCheckForUpdates = onCheckForUpdates
         self.captureItem = NSMenuItem(title: "Capture Now",
                                        action: #selector(StatusItem.triggerCapture),
                                        keyEquivalent: "")
@@ -60,6 +63,12 @@ final class StatusItem: NSObject, NSMenuDelegate {
         settings.target = self
         menu.addItem(settings)
 
+        let updates = NSMenuItem(title: "Check for Updates…",
+                                  action: #selector(checkForUpdates),
+                                  keyEquivalent: "")
+        updates.target = self
+        menu.addItem(updates)
+
         menu.addItem(NSMenuItem.separator())
         menu.addItem(withTitle: "Quit CopyLens",
                      action: #selector(NSApplication.terminate(_:)),
@@ -85,7 +94,8 @@ final class StatusItem: NSObject, NSMenuDelegate {
         }
     }
 
-    @objc private func triggerCapture() { onTrigger() }
-    @objc private func openSettings()   { onOpenSettings() }
-    @objc private func openAbout()      { onOpenAbout() }
+    @objc private func triggerCapture()   { onTrigger() }
+    @objc private func openSettings()     { onOpenSettings() }
+    @objc private func openAbout()        { onOpenAbout() }
+    @objc private func checkForUpdates()  { onCheckForUpdates() }
 }

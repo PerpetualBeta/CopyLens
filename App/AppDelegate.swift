@@ -6,25 +6,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var hotkey: HotkeyManager!
     private var capture: CaptureCoordinator!
     private var sparkleDelegate: SparkleDelegate?
-    private var updateChecker: JorvikUpdateChecker!
 
     func applicationDidFinishLaunching(_ note: Notification) {
         clog("applicationDidFinishLaunching")
 
         capture = CaptureCoordinator()
-        updateChecker = JorvikUpdateChecker(repoName: "CopyLens")
+
+        sparkleDelegate = SparkleDelegate()
+        sparkleDelegate?.start()
 
         statusItem = StatusItem(
-            onTrigger:      { [weak self] in self?.beginCapture(source: "menu") },
-            onOpenSettings: { [weak self] in self?.openSettings() },
-            onOpenAbout:    { Self.openAbout() }
+            onTrigger:         { [weak self] in self?.beginCapture(source: "menu") },
+            onOpenSettings:    { [weak self] in self?.openSettings() },
+            onOpenAbout:       { Self.openAbout() },
+            onCheckForUpdates: { [weak self] in self?.sparkleDelegate?.checkForUpdates() }
         )
 
         hotkey = HotkeyManager()
         registerCaptureHotkey()
-
-        sparkleDelegate = SparkleDelegate()
-        sparkleDelegate?.start()
     }
 
     // MARK: - Capture
@@ -55,10 +54,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Settings & About windows
 
     private func openSettings() {
-        JorvikSettingsView.showWindow(
-            appName: "CopyLens",
-            updateChecker: updateChecker
-        ) {
+        JorvikSettingsView.showWindow(appName: "CopyLens") {
             CopyLensSettings(onHotkeyChanged: { [weak self] _ in
                 self?.registerCaptureHotkey()
             })
