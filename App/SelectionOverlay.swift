@@ -79,6 +79,25 @@ private final class SelectionView: NSView {
         window?.makeFirstResponder(self)
     }
 
+    // A single NSCursor.push() in SelectionOverlay.show() doesn't survive AppKit's
+    // cursor-update cycle as the mouse moves over the panel — the system keeps
+    // asking "what cursor here?" and reverts to the arrow. Answering via a
+    // tracking area's cursorUpdate keeps the crosshair pinned the whole time.
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        for area in trackingAreas { removeTrackingArea(area) }
+        addTrackingArea(NSTrackingArea(
+            rect: .zero,
+            options: [.activeAlways, .cursorUpdate, .inVisibleRect],
+            owner: self,
+            userInfo: nil
+        ))
+    }
+
+    override func cursorUpdate(with event: NSEvent) {
+        NSCursor.crosshair.set()
+    }
+
     override func mouseDown(with event: NSEvent) {
         anchor = convert(event.locationInWindow, from: nil)
         current = anchor
