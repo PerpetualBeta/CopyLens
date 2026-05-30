@@ -45,13 +45,16 @@ final class CaptureCoordinator {
     private func runPipeline(globalRect: CGRect) async {
         clog("CaptureCoordinator: capturing rect=\(globalRect)")
 
-        guard let image = await Screenshot.capture(globalRect: globalRect) else {
+        guard let capture = await Screenshot.capture(globalRect: globalRect) else {
             clog("CaptureCoordinator: screenshot failed")
             HUDWindow.show(text: "Capture failed", subtext: "Check Screen Recording permission")
             return
         }
+        let image = capture.image
 
-        let texts = await OCRService.recognize(image)
+        // OCR reads from an enhanced copy on low-DPI captures; the native
+        // `image` below is what gets pasted when no text is found.
+        let texts = await OCRService.recognize(image, sourceScale: capture.scale)
         if texts.isEmpty {
             clog("CaptureCoordinator: no text recognised — copying image (\(image.width)x\(image.height))")
             Pasteboard.copy(image: image)

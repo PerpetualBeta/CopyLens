@@ -7,12 +7,20 @@ import ScreenCaptureKit
 /// — bottom-left origin, y-up). ScreenCaptureKit wants display-local CG
 /// coordinates (top-left origin, y-down), so we flip + translate per-display.
 ///
-/// Returns the captured CGImage at native pixel density (Retina), or nil if
-/// the rect doesn't intersect any display, the user hasn't granted Screen
-/// Recording permission, or the capture itself fails. Errors are logged.
+/// Returns the captured CGImage at native pixel density together with the
+/// source display's `backingScaleFactor` (2.0 on Retina/5K, 1.0 on a
+/// sub-Retina display), or nil if the rect doesn't intersect any display,
+/// the user hasn't granted Screen Recording permission, or the capture
+/// itself fails. Errors are logged.
+///
+/// The scale travels with the image so the OCR path can decide whether to
+/// enhance a low-DPI capture before recognition — see `OCRService`. We pass
+/// the real `backingScaleFactor` rather than recomputing pixels ÷ points at
+/// the call site, because integer rounding of the SCK output dimensions can
+/// nudge that ratio just under 2.0 and misclassify a genuine Retina capture.
 enum Screenshot {
 
-    static func capture(globalRect cocoaRect: CGRect) async -> CGImage? {
+    static func capture(globalRect cocoaRect: CGRect) async -> (image: CGImage, scale: CGFloat)? {
         do {
             let content = try await SCShareableContent.excludingDesktopWindows(false,
                                                                                 onScreenWindowsOnly: true)
@@ -54,8 +62,9 @@ enum Screenshot {
             config.showsCursor = false
 
             let filter = SCContentFilter(display: display, excludingWindows: [])
-            return try await SCScreenshotManager.captureImage(contentFilter: filter,
-                                                                configuration: config)
+            let image = try await SCScreenshotManager.captureImage(contentFilter: filter,
+                                                                    configuration: config)
+            return (image, scale)
         } catch {
             clog("Screenshot: capture failed — \(error)")
             return nil

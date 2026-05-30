@@ -1,5 +1,6 @@
 import Cocoa
 import Vision
+import CoreImage
 
 /// Runs Vision's text recognition over a CGImage and returns the recognised
 /// lines in reading order.
@@ -20,13 +21,43 @@ import Vision
 /// capture) — relaunch CopyLens if you change system languages.
 enum OCRService {
 
-    static func recognize(_ image: CGImage) async -> [String] {
+    /// `sourceScale` is the capturing display's `backingScaleFactor`. On a
+    /// Retina/5K display (≥ 2.0) the native capture already gives Vision
+    /// ~28–32 px glyphs and we recognise it as-is. On a sub-Retina display
+    /// (< 2.0) glyphs land around 10–12 px, well under the recogniser's
+    /// comfortable range, so we hand Vision an enhanced copy (Lanczos
+    /// upscale + light contrast + unsharp mask) and drop the small-text
+    /// floor. The native image is untouched — the caller still pastes that
+    /// when no text is found.
+    static func recognize(_ image: CGImage, sourceScale: CGFloat = 2.0) async -> [String] {
+        let lowRes = sourceScale < 2.0
+        let ocrImage: CGImage
+        if lowRes {
+            // Bring the effective density up to ~3× (1.0 → 3×, 1.5 → 2×).
+            let factor = max(1.0, 3.0 / sourceScale)
+            ocrImage = enhancedForOCR(image, upscale: factor) ?? image
+            clog("OCRService: low-res source (scale \(sourceScale)) — enhanced \(image.width)×\(image.height) → \(ocrImage.width)×\(ocrImage.height)")
+        } else {
+            ocrImage = image
+        }
+
         let request = VNRecognizeTextRequest()
         request.recognitionLevel = .accurate
         request.usesLanguageCorrection = true
         request.recognitionLanguages = preferredLanguages
+        if lowRes {
+            // minimumTextHeight is a fraction of image height, so upscaling
+            // doesn't change it — lower the floor explicitly so a small
+            // caption inside a wider selection isn't discarded. Also pin the
+            // newest recogniser revision available. Both are scoped to the
+            // low-res path so the Retina behaviour is byte-for-byte unchanged.
+            request.minimumTextHeight = 0
+            if let newest = VNRecognizeTextRequest.supportedRevisions.max() {
+                request.revision = newest
+            }
+        }
 
-        let handler = VNImageRequestHandler(cgImage: image, options: [:])
+        let handler = VNImageRequestHandler(cgImage: ocrImage, options: [:])
         do {
             try handler.perform([request])
         } catch {
@@ -51,6 +82,49 @@ enum OCRService {
         }
 
         return sorted.compactMap { $0.topCandidates(1).first?.string }
+    }
+
+    // MARK: - Low-resolution enhancement
+
+    /// GPU-backed Core Image context, created once. Reused across captures —
+    /// building a CIContext per call is expensive.
+    private static let ciContext = CIContext(options: [.useSoftwareRenderer: false])
+
+    /// Produces an OCR-friendly copy of a low-DPI capture: a Lanczos upscale
+    /// (good-quality interpolation), a small contrast lift, and an unsharp
+    /// mask to restore the edge contrast that sub-pixel rendering and the
+    /// interpolation soften. Upscaling can't add detail the framebuffer never
+    /// had, but a larger, crisper glyph blob is what Vision's detector wants —
+    /// and it lifts small text clear of the recogniser's internal floor.
+    ///
+    /// Returns nil if any filter or the final render fails, so the caller
+    /// falls back to the unmodified image rather than dropping the capture.
+    private static func enhancedForOCR(_ cgImage: CGImage, upscale: CGFloat) -> CGImage? {
+        var working = CIImage(cgImage: cgImage)
+
+        guard let lanczos = CIFilter(name: "CILanczosScaleTransform") else { return nil }
+        lanczos.setValue(working, forKey: kCIInputImageKey)
+        lanczos.setValue(upscale, forKey: kCIInputScaleKey)
+        lanczos.setValue(1.0, forKey: kCIInputAspectRatioKey)
+        guard let scaled = lanczos.outputImage else { return nil }
+        working = scaled
+
+        if let contrast = CIFilter(name: "CIColorControls") {
+            contrast.setValue(working, forKey: kCIInputImageKey)
+            contrast.setValue(1.1, forKey: kCIInputContrastKey)
+            if let out = contrast.outputImage { working = out }
+        }
+
+        if let unsharp = CIFilter(name: "CIUnsharpMask") {
+            unsharp.setValue(working, forKey: kCIInputImageKey)
+            unsharp.setValue(1.6, forKey: kCIInputRadiusKey)
+            unsharp.setValue(0.7, forKey: kCIInputIntensityKey)
+            if let out = unsharp.outputImage { working = out }
+        }
+
+        let extent = working.extent
+        guard !extent.isInfinite, !extent.isNull, !extent.isEmpty else { return nil }
+        return ciContext.createCGImage(working, from: extent)
     }
 
     /// Human-readable summary of the language list, for the Settings UI.
