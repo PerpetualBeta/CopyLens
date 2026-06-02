@@ -28,14 +28,16 @@ final class StatusItem: NSObject, NSMenuDelegate {
                                        keyEquivalent: "")
         super.init()
 
-        if let button = item.button {
-            // SF Symbol placeholder for the menu-bar glyph. The .app icon
-            // uses the bespoke generated artwork; this is just for the
-            // status item line and stays template-style so it adapts to
-            // light/dark menu bars.
-            button.image = NSImage(systemSymbolName: "rectangle.dashed",
-                                    accessibilityDescription: "CopyLens")
-            button.image?.isTemplate = true
+        applyIcon()
+
+        // Redraw the status icon when the display configuration changes — the
+        // menu bar's effective thickness can shrink (e.g. moving from a notched
+        // display to an external one) and leave the pre-rendered glyph cropped.
+        NotificationCenter.default.addObserver(
+            forName: NSApplication.didChangeScreenParametersNotification,
+            object: nil, queue: .main
+        ) { [weak self] _ in
+            self?.applyIcon()
         }
 
         let menu = NSMenu()
@@ -75,6 +77,16 @@ final class StatusItem: NSObject, NSMenuDelegate {
                      keyEquivalent: "q")
 
         item.menu = menu
+    }
+
+    /// SF Symbol placeholder for the menu-bar glyph. The .app icon uses
+    /// the bespoke generated artwork; this is just for the status item
+    /// line and stays template-style so it adapts to light/dark menu bars.
+    private func applyIcon() {
+        guard let button = item.button else { return }
+        button.image = NSImage(systemSymbolName: "rectangle.dashed",
+                                accessibilityDescription: "CopyLens")
+        button.image?.isTemplate = true
     }
 
     // MARK: - NSMenuDelegate
