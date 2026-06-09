@@ -50,6 +50,8 @@ struct CopyLensSettings: View {
                 .foregroundStyle(.secondary)
         }
 
+        MenuBarVisibilitySettings()
+
         Section("Capture") {
             HStack {
                 Text("Hotkey")

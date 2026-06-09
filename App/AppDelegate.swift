@@ -2,7 +2,7 @@ import Cocoa
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
 
-    private var statusItem: StatusItem!
+    private var statusItem: StatusItem?
     private var hotkey: HotkeyManager!
     private var capture: CaptureCoordinator!
     private var sparkleDelegate: SparkleDelegate?
@@ -15,15 +15,52 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         sparkleDelegate = SparkleDelegate()
         sparkleDelegate?.start()
 
+        createStatusItem()
+
+        // Add/remove the status-bar item when the user toggles its
+        // visibility in Settings. Capture still works via the hotkey while
+        // the icon is hidden; relaunching from /Applications brings it back.
+        NotificationCenter.default.addObserver(
+            forName: JorvikStatusItemVisibility.didChangeNotification,
+            object: nil, queue: .main
+        ) { [weak self] _ in
+            self?.applyStatusItemVisibility()
+        }
+
+        hotkey = HotkeyManager()
+        registerCaptureHotkey()
+    }
+
+    // MARK: - Status item lifecycle
+
+    /// Build the menu-bar status item, honouring the user's "Show icon in
+    /// menu bar" choice. When hidden, no item is created.
+    private func createStatusItem() {
+        guard JorvikStatusItemVisibility.isVisible else { return }
         statusItem = StatusItem(
             onTrigger:         { [weak self] in self?.beginCapture(source: "menu") },
             onOpenSettings:    { [weak self] in self?.openSettings() },
             onOpenAbout:       { Self.openAbout() },
             onCheckForUpdates: { [weak self] in self?.sparkleDelegate?.checkForUpdates() }
         )
+    }
 
-        hotkey = HotkeyManager()
-        registerCaptureHotkey()
+    /// Create or tear down the status-bar item to match the persisted
+    /// visibility flag. Driven by the Settings toggle and by relaunch.
+    private func applyStatusItemVisibility() {
+        if JorvikStatusItemVisibility.isVisible {
+            if statusItem == nil { createStatusItem() }
+        } else if let item = statusItem {
+            item.dispose()
+            statusItem = nil
+        }
+    }
+
+    /// Relaunching from /Applications is the user's way back to a hidden
+    /// icon — restore visibility when the app is reopened.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        JorvikStatusItemVisibility.handleReopen()
+        return true
     }
 
     // MARK: - Capture

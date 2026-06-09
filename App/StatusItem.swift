@@ -79,6 +79,13 @@ final class StatusItem: NSObject, NSMenuDelegate {
         item.menu = menu
     }
 
+    /// Remove the underlying `NSStatusItem` from the menu bar. Called when
+    /// the user hides the icon via Settings; the owner then drops its
+    /// reference to this object so it (and its observer) deallocate.
+    func dispose() {
+        NSStatusBar.system.removeStatusItem(item)
+    }
+
     /// SF Symbol placeholder for the menu-bar glyph. The .app icon uses
     /// the bespoke generated artwork; this is just for the status item
     /// line and stays template-style so it adapts to light/dark menu bars.
