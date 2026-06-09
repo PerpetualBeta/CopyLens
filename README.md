@@ -50,9 +50,12 @@ Click the menu bar icon → **Settings…**:
 - **Hotkey** — click the field and press the combination you want. Default is **⌃⌥⇧⌘\\** (Hyper-\\); change it to anything that includes at least one modifier.
 - **Show feedback HUD** — toggle the toast that appears after each capture. Off if you'd rather work silently.
 - **OCR languages** — read-only display. CopyLens picks recognition languages from your system's preferred language list, intersected with Vision's supported set, with English always appended as a fallback. If your Mac is set to French, you'll see `fr-FR, en-US` here and both will be recognised on every capture.
+- **Show icon in menu bar** — hide the menu-bar icon while CopyLens keeps running. The app remains reachable via its keyboard shortcut; your choice persists across launches, including login auto-start. *Shown only on macOS 14–15 — on macOS 26 (Tahoe) and later, use System Settings → Menu Bar, which provides this natively.*
 - **Launch at Login** — start automatically when you log in.
 
 All settings persist immediately, no Save/OK button.
+
+If you've hidden the menu-bar icon and want it back, simply re-open CopyLens from your Applications folder — it reappears immediately.
 
 ## Auto-update
 
@@ -103,6 +106,10 @@ CopyLens builds via the shared Jorvik `release.mk`. With the `jorvik-release` si
 CopyLens uses [Sparkle 2.x](https://sparkle-project.org/) for auto-update (MIT). Text recognition and screen capture are provided by Apple's Vision and ScreenCaptureKit frameworks — part of macOS, no separate attribution required.
 
 See [`ATTRIBUTIONS.md`](ATTRIBUTIONS.md) for full Sparkle licence text.
+
+## Quitting
+
+Click the menu-bar icon and choose **Quit CopyLens**. If you've hidden that icon, re-open CopyLens from your Applications folder first to bring it back, then quit from the menu.
 
 ---
 
