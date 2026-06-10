@@ -28,16 +28,21 @@ To uninstall: `pkill CopyLens` then drag `CopyLens.app` to the Trash.
 1. **Hit your shortcut.** A transparent overlay covers every connected display and the cursor switches to a crosshair.
 2. **Drag a rectangle** around the content you want. Release to commit, Escape to cancel.
 3. **CopyLens captures that rectangle** at native pixel density via ScreenCaptureKit and runs Apple's Vision framework over it.
-4. **You get one of two outcomes:**
+4. **You get one of three outcomes:**
+    - **A table** → if the text forms a grid, it's copied as both an HTML `<table>` and tab-separated values, so it pastes as real cells into Numbers, Excel, Sheets, Word, Pages and Mail — and as readable tab-separated columns into plain-text editors.
     - **Text found** → joined and placed on the clipboard as text, sorted top-to-bottom and left-to-right in reading order.
     - **No text found** → the cropped image is placed on the clipboard as PNG + TIFF, ready to paste into any app that accepts images.
-5. A brief HUD confirms which path ran ("Copied 247 chars" / "Copied image 320×180"). Both can be paste-targeted immediately.
+5. A brief HUD confirms which path ran ("Copied table — 18 rows × 4 cols" / "Copied 247 chars" / "Copied image 320×180"). All can be paste-targeted immediately.
 
 Because the gesture is the same regardless of content, you don't have to decide ahead of time whether you want text or an image. Draw the box; CopyLens does the right thing.
 
 ### One column from a table
 
 Draw a tight rectangle that covers just one column's width. Vision only sees text inside the rectangle, so the result is exactly that column — top to bottom, one line per row, plain text. Paste anywhere. Tables in Mail, in browser pages, in PDFs, in screenshots-of-PDFs — all the same gesture.
+
+### A whole table
+
+Draw a rectangle around a multi-column table — a dealer ledger, a spreadsheet region, a table in a PDF or web page. CopyLens reconstructs the grid geometrically (clustering recognised words into rows by their vertical position and into columns by the whitespace corridors between them) and copies it in two forms at once: an HTML table and tab-separated values. Paste into a spreadsheet and it lands as cells; paste into Word or Mail and it's a formatted table; paste into a code editor and you get clean tab-separated columns. Detection is automatic and conservative — if the region isn't convincingly tabular, CopyLens falls back to plain text.
 
 ### A region of a diagram
 
@@ -84,8 +89,9 @@ The overlay covers every connected screen at once; you can drag your rectangle s
 | `CaptureCoordinator.swift` | End-to-end pipeline orchestration |
 | `SelectionOverlay.swift` | Transparent per-screen panels, rect-drag drawing |
 | `Screenshot.swift` | ScreenCaptureKit capture, Cocoa→CG coord flip, native pixel density |
-| `OCRService.swift` | Vision text recognition, reading-order sort, locale-driven language picker |
-| `Pasteboard.swift` | Text-or-image clipboard writer |
+| `OCRService.swift` | Vision text recognition, reading-order sort, word-level boxes, locale-driven language picker |
+| `TableDetector.swift` | Geometric grid reconstruction (X-Y cut) from positioned words |
+| `Pasteboard.swift` | Text, image, or table (HTML + TSV) clipboard writer |
 | `HUDWindow.swift` | Bottom-centre feedback toast, UserDefaults-gated |
 | `CopyLensSettings.swift` | SwiftUI app-specific settings rows, slotted into JorvikSettingsView |
 | `SparkleDelegate.swift` | Sparkle 2.x bootstrap |
