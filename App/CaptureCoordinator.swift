@@ -54,18 +54,23 @@ final class CaptureCoordinator {
 
         // OCR reads from an enhanced copy on low-DPI captures; the native
         // `image` below is what gets pasted when no text is found.
-        let texts = await OCRService.recognize(image, sourceScale: capture.scale)
-        if texts.isEmpty {
+        let result = await OCRService.recognize(image, sourceScale: capture.scale)
+        if result.isEmpty {
             clog("CaptureCoordinator: no text recognised — copying image (\(image.width)x\(image.height))")
             Pasteboard.copy(image: image)
             HUDWindow.show(text: "Copied image",
                            subtext: "\(image.width)×\(image.height) px")
+        } else if let table = TableDetector.detect(result.words) {
+            clog("CaptureCoordinator: table detected \(table.rowCount)×\(table.columnCount) — copying as table")
+            Pasteboard.copy(table: table)
+            HUDWindow.show(text: "Copied table",
+                           subtext: "\(table.rowCount) row\(table.rowCount == 1 ? "" : "s") × \(table.columnCount) col\(table.columnCount == 1 ? "" : "s")")
         } else {
-            let joined = texts.joined(separator: "\n")
-            clog("CaptureCoordinator: \(texts.count) line(s), \(joined.count) chars — copying text")
+            let joined = result.lines.joined(separator: "\n")
+            clog("CaptureCoordinator: \(result.lines.count) line(s), \(joined.count) chars — copying text")
             Pasteboard.copy(text: joined)
             HUDWindow.show(text: "Copied \(joined.count) chars",
-                           subtext: "\(texts.count) line\(texts.count == 1 ? "" : "s")")
+                           subtext: "\(result.lines.count) line\(result.lines.count == 1 ? "" : "s")")
         }
     }
 }

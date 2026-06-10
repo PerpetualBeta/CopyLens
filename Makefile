@@ -22,6 +22,7 @@ SWIFT_SOURCES    := App/main.swift App/AppDelegate.swift \
                     App/HotkeyManager.swift App/HotkeyRecorder.swift \
                     App/CaptureCoordinator.swift App/SelectionOverlay.swift \
                     App/Screenshot.swift App/OCRService.swift \
+                    App/TableDetector.swift \
                     App/Pasteboard.swift App/HUDWindow.swift \
                     App/CopyLensSettings.swift App/SparkleDelegate.swift \
                     App/Log.swift \

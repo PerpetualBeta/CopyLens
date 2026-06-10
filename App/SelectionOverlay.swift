@@ -48,6 +48,14 @@ final class SelectionOverlay {
             panel.makeKeyAndOrderFront(nil)
             panels.append(panel)
         }
+        // The overlay panels are `.nonactivatingPanel`, so the app stays in
+        // the background — and while CopyLens isn't the active app, macOS
+        // keeps reasserting the frontmost app's arrow cursor over our overlay,
+        // overriding anything we set. Activating CopyLens for the duration of
+        // the selection lets our crosshair (cursorUpdate + the per-event
+        // `set()` calls in SelectionView) actually take hold. Focus returns to
+        // the previous app when the panels close in `finish()`.
+        NSApp.activate(ignoringOtherApps: true)
         NSCursor.crosshair.push()
     }
 
@@ -98,13 +106,24 @@ private final class SelectionView: NSView {
         NSCursor.crosshair.set()
     }
 
+    // Belt-and-braces: cursorUpdate (above) is the documented hook, but on a
+    // non-activating overlay panel the system's cursor-rect cycle doesn't
+    // always honour it and reverts to the underlying app's arrow. Re-setting
+    // the crosshair on every mouse event we receive — hover, press, drag —
+    // pins it reliably regardless of which mechanism the OS is using.
+    override func mouseMoved(with event: NSEvent) {
+        NSCursor.crosshair.set()
+    }
+
     override func mouseDown(with event: NSEvent) {
+        NSCursor.crosshair.set()
         anchor = convert(event.locationInWindow, from: nil)
         current = anchor
         needsDisplay = true
     }
 
     override func mouseDragged(with event: NSEvent) {
+        NSCursor.crosshair.set()
         current = convert(event.locationInWindow, from: nil)
         needsDisplay = true
     }

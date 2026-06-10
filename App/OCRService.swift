@@ -29,7 +29,25 @@ enum OCRService {
     /// upscale + light contrast + unsharp mask) and drop the small-text
     /// floor. The native image is untouched — the caller still pastes that
     /// when no text is found.
-    static func recognize(_ image: CGImage, sourceScale: CGFloat = 2.0) async -> [String] {
+    /// One recognised word with its bounding box in Vision's normalised,
+    /// bottom-left-origin image space. Fed to `TableDetector` to reconstruct
+    /// column/row structure geometrically.
+    struct PositionedWord {
+        let text: String
+        let box: CGRect
+    }
+
+    /// Result of a recognition pass.
+    /// - `lines`: reading-order observation strings (the plain-text path).
+    /// - `words`: every word with its box (the table-detection path).
+    struct OCRResult {
+        let lines: [String]
+        let words: [PositionedWord]
+
+        var isEmpty: Bool { lines.isEmpty }
+    }
+
+    static func recognize(_ image: CGImage, sourceScale: CGFloat = 2.0) async -> OCRResult {
         let lowRes = sourceScale < 2.0
         let ocrImage: CGImage
         if lowRes {
@@ -62,11 +80,11 @@ enum OCRService {
             try handler.perform([request])
         } catch {
             clog("OCRService: VN perform failed — \(error)")
-            return []
+            return OCRResult(lines: [], words: [])
         }
 
         guard let observations = request.results, !observations.isEmpty else {
-            return []
+            return OCRResult(lines: [], words: [])
         }
 
         let sorted = observations.sorted { a, b in
@@ -81,7 +99,45 @@ enum OCRService {
             return a.boundingBox.minX < b.boundingBox.minX
         }
 
-        return sorted.compactMap { $0.topCandidates(1).first?.string }
+        let lines = sorted.compactMap { $0.topCandidates(1).first?.string }
+        let words = sorted.flatMap { positionedWords(in: $0) }
+        return OCRResult(lines: lines, words: words)
+    }
+
+    /// Breaks an observation's top candidate into whitespace-delimited words,
+    /// each tagged with its own bounding box via `boundingBox(for:)`. Vision
+    /// sometimes returns a whole table row as one observation and sometimes
+    /// one observation per cell — working at word granularity makes the
+    /// downstream column reconstruction robust to both.
+    private static func positionedWords(in observation: VNRecognizedTextObservation) -> [PositionedWord] {
+        guard let candidate = observation.topCandidates(1).first else { return [] }
+        let string = candidate.string
+        var result: [PositionedWord] = []
+        var index = string.startIndex
+        while index < string.endIndex {
+            if string[index].isWhitespace {
+                index = string.index(after: index)
+                continue
+            }
+            let wordStart = index
+            var wordEnd = index
+            while wordEnd < string.endIndex, !string[wordEnd].isWhitespace {
+                wordEnd = string.index(after: wordEnd)
+            }
+            let range = wordStart..<wordEnd
+            let text = String(string[range])
+            // boundingBox(for:) maps a character range back to image space.
+            // Fall back to the whole-observation box if it can't (rare); that
+            // word then can't be column-split, which is the acceptable
+            // degenerate case.
+            if let boxObs = try? candidate.boundingBox(for: range) {
+                result.append(PositionedWord(text: text, box: boxObs.boundingBox))
+            } else {
+                result.append(PositionedWord(text: text, box: observation.boundingBox))
+            }
+            index = wordEnd
+        }
+        return result
     }
 
     // MARK: - Low-resolution enhancement
