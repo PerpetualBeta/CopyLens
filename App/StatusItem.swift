@@ -19,6 +19,8 @@ final class StatusItem: NSObject, NSMenuDelegate {
          onCheckForUpdates: @escaping () -> Void)
     {
         self.item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        // Persist the item's menu-bar slot across launches (and let a user ⌘-drag stick).
+        self.item.autosaveName = "CopyLensStatusItem"
         self.onTrigger = onTrigger
         self.onOpenSettings = onOpenSettings
         self.onOpenAbout = onOpenAbout
