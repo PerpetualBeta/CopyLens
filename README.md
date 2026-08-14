@@ -16,6 +16,12 @@ Two formats on every release — both signed and notarised, pick whichever suits
 - **[Installer (`.pkg`)](https://github.com/PerpetualBeta/CopyLens/releases/latest/download/CopyLens.pkg)** — recommended for first-time installs. Double-click to run; macOS Installer places `CopyLens.app` in `/Applications/` without quarantine or App Translocation.
 - **[Download (`.zip`)](https://github.com/PerpetualBeta/CopyLens/releases/latest)** — unzip and drag `CopyLens.app` to your `/Applications/` folder.
 
+Or install it with [Homebrew](https://brew.sh):
+
+```sh
+brew install --cask perpetualbeta/jorvik/copylens
+```
+
 After installation:
 
 1. Launch CopyLens — a dashed-rectangle icon appears in the menu bar
