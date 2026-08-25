@@ -32,7 +32,7 @@ To uninstall: `pkill CopyLens` then drag `CopyLens.app` to the Trash.
 ## How it works
 
 1. **Hit your shortcut.** A transparent overlay covers every connected display and the cursor switches to a crosshair.
-2. **Drag a rectangle** around the content you want. Release to commit, Escape to cancel.
+2. **Drag a rectangle** around the content you want. Release to commit, `esc` to cancel.
 3. **CopyLens captures that rectangle** at native pixel density via ScreenCaptureKit and runs Apple's Vision framework over it.
 4. **You get one of three outcomes:**
     - **A table** → if the text forms a grid, it's copied as both an HTML `<table>` and tab-separated values, so it pastes as real cells into Numbers, Excel, Sheets, Word, Pages and Mail — and as readable tab-separated columns into plain-text editors.
@@ -58,7 +58,7 @@ Draw a rectangle around a chart, a panel of an image, a UI mockup. Vision finds 
 
 Click the menu bar icon → **Settings…**:
 
-- **Hotkey** — click the field and press the combination you want. Default is **⌃⌥⇧⌘\\** (Hyper-\\); change it to anything that includes at least one modifier.
+- **Hotkey** — click the field and press the combination you want. Default is `control` `option` `shift` `command` `\` (Hyper-\\); change it to anything that includes at least one modifier.
 - **Show feedback HUD** — toggle the toast that appears after each capture. Off if you'd rather work silently.
 - **OCR languages** — read-only display. CopyLens picks recognition languages from your system's preferred language list, intersected with Vision's supported set, with English always appended as a fallback. If your Mac is set to French, you'll see `fr-FR, en-US` here and both will be recognised on every capture.
 - **Show icon in menu bar** — hide the menu-bar icon while CopyLens keeps running. The app remains reachable via its keyboard shortcut; your choice persists across launches, including login auto-start. *Shown only on macOS 14–15 — on macOS 26 (Tahoe) and later, use System Settings → Menu Bar, which provides this natively.*
