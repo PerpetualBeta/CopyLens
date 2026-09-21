@@ -19,7 +19,7 @@ ALSO_SHIP_PKG    := true
 SWIFT_FRAMEWORKS := Cocoa CoreGraphics Vision ScreenCaptureKit Carbon ServiceManagement
 SWIFT_SOURCES    := App/main.swift App/AppDelegate.swift \
                     App/StatusItem.swift \
-                    App/HotkeyManager.swift App/HotkeyRecorder.swift \
+                    App/HotkeyDefault.swift App/HotkeyManager.swift \
                     App/CaptureCoordinator.swift App/SelectionOverlay.swift \
                     App/Screenshot.swift App/OCRService.swift \
                     App/TableDetector.swift \

@@ -1,3 +1,25 @@
+//  JorvikHotkeyRecorder.swift — canonical JorvikKit
+//
+//  The global-hotkey subsystem: a value type, its persistence, its display
+//  formatting, the key-name tables, and the SwiftUI recorder field.
+//
+//  Promoted into JorvikKit on 2026-09-21. It had been hand-rolled four times —
+//  ASCII Saver and Rainy Day shared one 206-line copy, HawkEye had 275 and
+//  CopyLens 312, the latter two adding menu key equivalents. This is CopyLens's
+//  version, which was the fullest and the best documented, with its app-specific
+//  seed shortcut taken out. Each app keeps its own default; that is a product
+//  decision, not shared infrastructure.
+//
+//  NOT to be confused with JorvikShortcutRecorder, which is a different and much
+//  smaller thing: a recording *view* that hands the caller a shortcut and owns
+//  no storage. Fourteen apps use that one and supply their own persistence. The
+//  four that used this one get the whole subsystem instead, which is why they
+//  were never migrated to the other.
+//
+//  Type names are deliberately unprefixed — HotkeyConfig, HotkeyStore,
+//  HotkeyRecorderView — so that promoting the file changed no call site in any
+//  of the four apps.
+
 import AppKit
 import SwiftUI
 import Carbon.HIToolbox
@@ -21,11 +43,6 @@ struct HotkeyConfig: Codable, Equatable {
             .intersection(.deviceIndependentFlagsMask)
     }
 
-    /// Hyper-\ — the seed default: Cmd+Ctrl+Opt+Shift+\\.
-    static let defaultCapture = HotkeyConfig(
-        keyCode: UInt16(kVK_ANSI_Backslash),
-        rawModifierFlags: NSEvent.ModifierFlags([.command, .control, .option, .shift]).rawValue
-    )
 }
 
 /// UserDefaults persistence for `HotkeyConfig`. Each hotkey slot has its
