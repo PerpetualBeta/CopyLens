@@ -92,9 +92,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func openSettings() {
         JorvikSettingsView.showWindow(appName: "CopyLens") {
-            CopyLensSettings(onHotkeyChanged: { [weak self] _ in
-                self?.registerCaptureHotkey()
-            })
+            CopyLensSettings(
+                onHotkeyChanged: { [weak self] _ in
+                    self?.registerCaptureHotkey()
+                },
+                onRecordingChanged: { [weak self] recording in
+                    self?.hotkey.setRecordingSuspended(recording)
+                }
+            )
         }
     }
 
