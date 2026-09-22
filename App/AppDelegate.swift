@@ -91,7 +91,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Settings & About windows
 
     private func openSettings() {
-        JorvikSettingsView.showWindow(appName: "CopyLens") {
+        JorvikSettingsView.showWindow(appName: "CopyLens") { [weak self] in
             CopyLensSettings(
                 onHotkeyChanged: { [weak self] _ in
                     self?.registerCaptureHotkey()
