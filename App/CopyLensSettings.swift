@@ -24,31 +24,33 @@ struct CopyLensSettings: View {
 
     var body: some View {
         Section("Permissions") {
-            HStack {
-                Text("Screen Recording")
-                Spacer()
-                if screenRecording.isGranted {
-                    Label("Granted", systemImage: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
-                        .font(.caption)
-                } else {
-                    Button("Grant Access") {
-                        // First call surfaces the system TCC prompt; after
-                        // a prior denial CG silently records a request and
-                        // returns false, so also nudge the user toward
-                        // the Settings pane where they'd actually flip it.
-                        _ = CGRequestScreenCaptureAccess()
-                        screenRecording.reread()
-                        if !screenRecording.isGranted {
-                            JorvikPermissionWatcher.openSettings(pane: .screenRecording)
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text("Screen Recording")
+                    Spacer()
+                    if screenRecording.isGranted {
+                        Label("Granted", systemImage: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
+                            .font(.caption)
+                    } else {
+                        Button("Grant Access") {
+                            // First call surfaces the system TCC prompt; after
+                            // a prior denial CG silently records a request and
+                            // returns false, so also nudge the user toward
+                            // the Settings pane where they'd actually flip it.
+                            _ = CGRequestScreenCaptureAccess()
+                            screenRecording.reread()
+                            if !screenRecording.isGranted {
+                                JorvikPermissionWatcher.openSettings(pane: .screenRecording)
+                            }
                         }
+                        .font(.caption)
                     }
-                    .font(.caption)
                 }
+                Text("Screen Recording is required to capture the rectangle you draw so CopyLens can read text from it (or copy the cropped image when there's no text).")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
-            Text("Screen Recording is required to capture the rectangle you draw so CopyLens can read text from it (or copy the cropped image when there's no text).")
-                .font(.caption)
-                .foregroundStyle(.secondary)
         }
 
         MenuBarVisibilitySettings()
