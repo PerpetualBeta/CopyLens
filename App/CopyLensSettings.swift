@@ -82,6 +82,6 @@ struct CopyLensSettings: View {
         // Debug logging is a power-user knob, not for the Settings UI.
         // Enable with:
         //   defaults write cc.jorviksoftware.CopyLens CopyLens.debugLogging -bool YES
-        // Then relaunch CopyLens. Output goes to /tmp/copylens.log.
+        // No relaunch needed. Output goes to ~/Library/Logs/CopyLens/copylens.log.
     }
 }

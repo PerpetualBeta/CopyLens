@@ -76,7 +76,7 @@ Updates are EdDSA-signed; your copy will only install genuine Jorvik Software re
 
 ## Privacy
 
-- **No telemetry.** No usage reporting, no log file unless you explicitly turn one on (`defaults write cc.jorviksoftware.CopyLens CopyLens.debugLogging -bool YES` writes lifecycle lines to `/tmp/copylens.log`; off by default), no network requests beyond Sparkle's appcast fetch.
+- **No telemetry.** No usage reporting, no log file unless you explicitly turn one on (`defaults write cc.jorviksoftware.CopyLens CopyLens.debugLogging -bool YES` writes lifecycle lines to `~/Library/Logs/CopyLens/copylens.log`, rotated at 4 MB; off by default), no network requests beyond Sparkle's appcast fetch.
 - **No camera, microphone, network access.** Captures stay on-device — Vision OCR runs locally; pasteboard writes are local.
 - **Permissions:** Screen Recording is the only permission CopyLens requests. Accessibility is **not** required (the hotkey uses Carbon's `RegisterEventHotKey`, which doesn't need AX).
 
