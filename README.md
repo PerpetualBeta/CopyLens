@@ -108,6 +108,8 @@ The overlay covers every connected screen at once; you can drag your rectangle s
 
 CopyLens builds via the shared Jorvik `release.mk`. With the `jorvik-release` sibling repo cloned alongside it and [GNU Make](https://formulae.brew.sh/formula/make) 4 installed:
 
+- Install GNU Make 4: `brew install make`
+- Clone the release pipeline: `git clone https://github.com/PerpetualBeta/jorvik-release.git`
 - Clone the repo: `git clone https://github.com/PerpetualBeta/CopyLens.git`
 - Local install (signed with the Jorvik Developer ID): `gmake dev-build`
 - Run the freshly-built copy: `gmake run`
